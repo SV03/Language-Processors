@@ -1,0 +1,89 @@
+
+proc main(){
+    int lol;
+    if (isnull lol) then {
+        lol = 0;
+    } else {
+
+    }
+    lol = lol + 1;
+    Dog dog;
+    dog = new object Dog();
+}
+proc cat(int num, int you, String name){
+    int lol;
+    lol = lol + 1;
+
+   
+}
+class Dog extends Animal {
+    
+    arrayof(int) feetSize;
+    String favToy;
+    proc Dog(){
+        feetSize = new arrayof(int)[(4)];
+    }
+
+    proc bark(int num){
+        int lol;
+        lol = lol + 1;
+        {
+            int i;
+            i=0;
+            if (!alive) then {
+
+            } else {
+                while(num) do {
+                    i = i + 1;
+                    output i *((1+1)-1);
+                }
+            }
+        }
+    }
+    fun int getLeftFrontFootSize(){
+        return feetSize[1];
+    }
+    fun int getRightFrontFootSize(){
+        return feetSize[2];
+    }
+    fun int getLeftBackFootSize(){
+        return feetSize[3];
+    }
+    fun int getRightBackFootSize(){
+        return feetSize[4];
+    }
+    proc setLeftFrontFootSize(int size){
+         feetSize[1] = size;
+    }
+    proc setRightFrontFootSize(int size){
+         feetSize[2] = size;
+    }
+    proc setLeftBackFootSize(int size){
+         feetSize[3] = size;
+    }
+    proc setRightBackFootSize(int size){
+         feetSize[4] = size;
+    }
+    fun int numOfFeet(){
+        return feetSize.length;
+    }
+}
+class Animal  {
+    String name;
+    int age;
+    boolean alive;
+    proc kill(){
+        alive = false;
+    }
+    proc setName(String newName){
+        if ((self.getName()) == newName) then {
+
+        } else {
+            name = newName;
+        }
+    }
+    fun String getName(){
+
+        return name;
+    }
+}

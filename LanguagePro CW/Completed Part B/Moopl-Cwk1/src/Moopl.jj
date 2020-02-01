@@ -1,0 +1,371 @@
+options {
+  STATIC = false;
+}
+
+PARSER_BEGIN(MooplParser)
+  import syntaxtree.*;
+  import syntaxtree.interp.*;
+  import java.util.List;
+  import java.util.LinkedList;
+  public class MooplParser {
+  }
+PARSER_END(MooplParser)
+
+SKIP : /* Define white-space and comments here */
+{
+    " "
+  | "\t"
+  | "\n"
+  | "\r"
+  | "\f"
+  | < "//" (~["\n","\r"])* ("\n"|"\r"|"\r\n") >
+  | <"/*" (~["*"])* "*" ("*" | (~["*","/"] (~["*"])* "*"))* "/">
+}
+
+TOKEN : /* Define the Moopl tokens here. */
+{
+  < PROC: "proc" >
+| < FUN: "fun" >
+| < CLASS: "class" >
+| < EXTENDS: "extends" >
+| < RETURN: "return" >
+| < ARRAYOF: "arrayof" >
+| < BOOLEAN: "boolean" >
+| < INT: "int" >
+| < IF: "if" >
+| < THEN: "then" >
+| < ELSE: "else" >
+| < WHILE: "while" >
+| < DO: "do" >
+| < OUTPUT: "output" >
+| < LENGTH: "length" >
+| < TRUE: "true" >
+| < FALSE: "false" >
+| < SELF: "self" >
+| < NEW: "new" >
+| < LPAREN: "(" >
+| < RPAREN: ")" >
+| < SEMICOL: ";" >
+| < LSQBR: "[" >
+| < RSQBR: "]" >
+| < NOT: "!" >
+| < ISNULL: "isnull" >
+| < COMM: "," >
+| < LCBR: "{" >
+| < RCBR: "}" >
+| < PERIOD: "." >
+| < OBJECT: "object">
+| < EQUALS: "=" >
+
+
+// LOTS OF TOKENS MISSING HERE!
+
+| < INTEGER_LITERAL: (["0"-"9"])+ >
+| < OP: "and" | "<" | "==" | "div" | "+" | "-" | "*">
+| < ID: ["a"-"z","A"-"Z"](["a"-"z","A"-"Z","0"-"9","_"])* >
+
+}
+
+/*
+ * TOKEN tester
+ */
+public void testTokens() :
+{
+  Token t;
+}
+{
+  ( ( ( t = <PROC>
+      | t = <FUN>
+      | t = <CLASS>
+      | t = <EXTENDS>
+      | t = <RETURN>
+      | t = <ARRAYOF>
+      | t = <BOOLEAN>
+      | t = <INT>
+      | t = <IF>
+      | t = <THEN>
+      | t = <ELSE>
+      | t = <WHILE>
+      | t = <DO>
+      | t = <OUTPUT>
+      | t = <LENGTH>
+      | t = <TRUE>
+      | t = <FALSE>
+      | t = <SELF>
+      | t = <NEW>
+      | t = <LPAREN >
+      | t = <RPAREN>
+      | t = <SEMICOL >
+      | t = <LSQBR>
+      | t = <RSQBR>
+      | t = <NOT>
+      | t = <ISNULL>
+      | t = <COMM>
+      | t = <LCBR>
+      | t = <RCBR>
+      | t = <PERIOD>
+      | t = <OBJECT>
+      | t = <EQUALS>
+        // ADD YOUR OWN TOKENS HERE AS YOU DEFINE EACH ONE
+      )
+      { System.out.println("Recognised as valid token: " + t.image); }
+    )
+  | ( t = <INTEGER_LITERAL>
+      { System.out.println("Recognised as INTEGER_LITERAL: " + t.image); }
+    )
+  | ( t = <ID>
+      { System.out.println("Recognised as ID: " + t.image); }
+    )
+  | ( t= <OP>
+      {  System.out.println("Recognised as OP: " + t.image); }
+    )
+  )*
+}
+
+
+/************************************
+ * The Moopl grammar starts here *
+ ************************************/
+
+
+public Program nt_Program() :
+{
+  ProcDecl pd;
+  ClassDecl cd;
+  List<ProcDecl> pds = new LinkedList<ProcDecl>();
+  List<ClassDecl> cds = new LinkedList<ClassDecl>();
+}
+{
+  (pd=nt_ProcDecl(){pds.add(pd);})+
+  (cd=nt_ClassDecl(){cds.add(cd);})*<EOF>
+  {return new Program(pds, cds);}
+}
+
+public ClassDecl nt_ClassDecl() :
+{
+  Token t;
+  Token t2;
+  FieldDecl fd;
+  MethodDecl md;
+  List<FieldDecl> fdl = new LinkedList<FieldDecl>();
+  List<MethodDecl> mdl = new LinkedList<MethodDecl>();
+
+}
+{
+  LOOKAHEAD(3)
+  <CLASS> t=<ID> <LCBR> (fd=nt_FieldDecl(){fdl.add(fd);})*(md=nt_MethodDecl(){mdl.add(md);})*<RCBR>{return new ClassDeclSimple(t.image, fdl, mdl);} //TOdo: ADD MISSING CASES
+| <CLASS> t=<ID> <EXTENDS> t2=<ID> <LCBR>(fd=nt_FieldDecl())* (md=nt_MethodDecl())*<RCBR>{return new ClassDeclExtends(t.image, t2.image,fdl,mdl);}
+}
+
+public MethodDecl nt_MethodDecl() :
+{
+  MethodDecl m;
+}
+{
+    m=nt_ProcDecl(){return m;}
+  | m=nt_FunDecl(){return m;}
+}
+
+public FunDecl nt_FunDecl() :
+{
+  Token t;
+  Type type;
+  Exp e;
+  List<Formal> fs;
+  List<Stm> ss = new LinkedList<Stm>();
+  Stm s;
+
+}
+{
+  // TODO: ADD MISSING CASES
+  <FUN> type=nt_Type() t=<ID> <LPAREN> fs=nt_FormalList() <RPAREN> <LCBR> (s=nt_Statement(){ss.add(s);})* <RETURN> e=nt_Exp() <SEMICOL> <RCBR>
+  {return new FunDecl(type, t.image, fs, ss, e);}
+}
+
+public ProcDecl nt_ProcDecl() :
+{
+  Token t;
+  Stm s;
+  List<Formal> fs;
+  List<Stm> ss = new LinkedList<Stm>();
+}
+{
+  <PROC> t=<ID> <LPAREN> fs=nt_FormalList() <RPAREN> <LCBR> (s=nt_Statement(){ss.add(s);})* <RCBR>
+  {return new ProcDecl(t.image, fs, ss);}// TODO: ADD MISSING CASES
+}
+
+public Exp nt_PrimaryExp() :
+{
+  Token t;
+  Var v;
+  Type type;
+  Exp e;
+  Exp e2;
+  List<Exp> exp;
+}
+{
+  t= <INTEGER_LITERAL> {return new ExpInteger(Integer.parseInt(t.image));}// TODO: ADD MISSING CASES
+| <TRUE>{return new ExpTrue();}
+| <FALSE>{return new ExpFalse();}
+| v=nt_var(){return new ExpVar(v);}
+| <SELF>{return new ExpSelf();}
+| LOOKAHEAD (2)
+ <NEW> <ARRAYOF> <LPAREN> type=nt_Type() <RPAREN>
+        <LSQBR> e2=nt_Exp() <RSQBR>{return new ExpNewArray(type,e2);}
+| <NEW> <OBJECT> t=<ID> <LPAREN> exp=nt_ExpList() <RPAREN>{return new ExpNewObject(t.image,exp);}
+| <NOT> e2=nt_PrimaryExp(){return new ExpNot(e2);}
+| <ISNULL> e2=nt_PrimaryExp(){return new ExpIsnull(e2);}
+| <LPAREN> e=nt_Exp() <RPAREN>{return e;}
+
+}
+
+// TODO: ADD MISSING NON_TERMINALS
+
+public void eof() :
+{}
+{
+  <EOF>
+}
+
+public Var nt_var() :
+{Token t;}
+{
+  t=<ID>{return new Var(t.image);}
+}
+
+public List<Formal> nt_FormalList() :
+{
+  Token t;
+  Type type;
+  List<Formal> fl= new LinkedList<Formal>();
+  Formal f;
+}
+{
+  type=nt_Type() t=<ID> {fl.add(new Formal(type,t.image));}(f=nt_FormalRest(){fl.add(f);})*{return fl;}
+  | {}{return fl;}
+}
+
+public Formal nt_FormalRest() :
+{
+  Token t;
+  Type type;
+}
+{
+    <COMM> type=nt_Type() t=<ID>{return new Formal(type,t.image);}
+}
+
+public Type nt_Type() :
+{
+  Token t;
+  Type type;
+}
+{
+  <ARRAYOF><LPAREN>type=nt_Type()<RPAREN>{return new TypeArray(type);}
+  |<BOOLEAN>{return new TypeBoolean();}
+  |<INT>{return new TypeInt();}
+  |t=<ID>{return new TypeClassType(t.image);}
+}
+
+public FieldDecl nt_FieldDecl():
+{
+  Token t;
+  Type type;
+}
+{
+  type=nt_Type()t=<ID><SEMICOL>{return new FieldDecl(type,t.image);}
+}
+
+public Stm nt_Statement() :
+{
+  Token t;
+  Exp e;
+  StmBlock b1 , b2;
+  Type type;
+  Var v;
+  Stm s;
+}
+{
+  s=nt_Block(){return s;}
+  | LOOKAHEAD(2)
+  type=nt_Type() t=<ID> <SEMICOL>{return new StmVarDecl(type,t.image);}
+  | LOOKAHEAD(2)
+  v=nt_var() <EQUALS> e=nt_Exp() <SEMICOL>{return new StmAssign(v,e);} // dont think its right
+  |<IF><LPAREN>e=nt_Exp()<RPAREN><THEN>b1=nt_Block()<ELSE>b2=nt_Block(){return new StmIf(e,b1,b2);}
+  |<WHILE><LPAREN>e=nt_Exp()<RPAREN><DO>b1=nt_Block(){return new StmWhile(e,b1);}
+  |<OUTPUT>e=nt_Exp()<SEMICOL>{return new StmOutput(e);}
+  |e=nt_PrimaryExp() s=nt_FRED(e) {return s;}
+}
+
+public Stm nt_FRED(Exp e1) :                               // this is an auxillary file for nt_statment
+{
+  Token t;
+  Exp e2 ,e3;
+  List<Exp> elist;
+}
+{
+    <LSQBR>e2=nt_Exp()<RSQBR><EQUALS>e3=nt_Exp()<SEMICOL>{return new StmArrayAssign(e1,e2,e3);}
+    | <PERIOD>t=<ID><LPAREN>elist=nt_ExpList()<RPAREN><SEMICOL>{return new StmCall(e1,t.image,elist);}
+}
+
+public StmBlock nt_Block() :
+{
+  Stm s;
+  List<Stm> statments = new LinkedList<Stm>();
+}
+{
+  <LCBR>(s=nt_Statement(){statments.add(s);})*<RCBR>{return new StmBlock(statments);}
+}
+
+public Exp nt_Exp() :
+{
+  Exp e1;
+  Exp e2;
+}
+{
+  e1=nt_PrimaryExp() e2=nt_Tilak(e1){return e2;}
+}
+
+public Exp nt_Tilak(Exp e1) :                              // this a auxillary function for nt_Exp()
+{
+  Token t;
+  List<Exp> exp;
+  Exp e2;
+}
+{
+  t=<OP>e2=nt_PrimaryExp(){
+    if(t.image == "and"){
+      return new ExpOp(e1, ExpOp.Op.AND,e2);
+    }else if(t.image == "div"){
+      return new ExpOp(e1, ExpOp.Op.DIV,e2);
+    }else if(t.image == "+"){
+      return new ExpOp(e1, ExpOp.Op.PLUS,e2);
+    }else if(t.image == "-"){
+      return new ExpOp(e1, ExpOp.Op.MINUS,e2);
+    }else if(t.image == "=="){
+      return new ExpOp(e1, ExpOp.Op.EQUALS,e2);
+    }else if(t.image == "*"){
+    return new ExpOp(e1, ExpOp.Op.TIMES,e2);
+    }else
+    {return new ExpOp(e1, ExpOp.Op.LESSTHAN,e2);}
+}
+  |<LSQBR>e1=nt_Exp()<RSQBR>{return e1;}
+  |LOOKAHEAD(2)<PERIOD><LENGTH>{return new ExpArrayLength(e1);}
+  |<PERIOD>t=<ID><LPAREN>exp=nt_ExpList()<RPAREN>{return new ExpCall(e1,t.image,exp);}
+  |{} {return e1;}
+}
+public List<Exp> nt_ExpList() :
+{
+  Exp e;
+  List<Exp> exp = new LinkedList<Exp>();
+}
+{
+  e=nt_Exp(){exp.add(e);} (e=nt_ExpRest(){exp.add(e);})* {return exp;} | {} {return exp;}
+}
+
+public Exp nt_ExpRest() :
+{
+  Exp e;
+}
+{
+  <COMM> e=nt_Exp() {return e;}
+}

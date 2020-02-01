@@ -1,0 +1,278 @@
+options {
+  STATIC = false;
+}
+
+PARSER_BEGIN(MooplParser)
+  import syntaxtree.*;
+  import syntaxtree.interp.*;
+  import java.util.List;
+  import java.util.LinkedList;
+  public class MooplParser {
+  }
+PARSER_END(MooplParser)
+
+SKIP : /* Define white-space and comments here */
+{
+    " "
+  | "\t"
+  | "\n"
+  | "\r"
+  | "\f"
+  | < "//" (~["\n","\r"])* ("\n"|"\r"|"\r\n") >
+  | <"/*" (~["*"])* "*" ("*" | (~["*","/"] (~["*"])* "*"))* "/">
+}
+
+TOKEN : /* Define the Moopl tokens here. */
+{
+  < PROC: "proc" >
+| < FUN: "fun" >
+| < CLASS: "class" >
+| < EXTENDS: "extends" >
+| < RETURN: "return" >
+| < ARRAYOF: "arrayof" >
+| < BOOLEAN: "boolean" >
+| < INT: "int" >
+| < IF: "if" >
+| < THEN: "then" >
+| < ELSE: "else" >
+| < WHILE: "while" >
+| < DO: "do" >
+| < OUTPUT: "output" >
+| < LENGTH: "length" >
+| < TRUE: "true" >
+| < FALSE: "false" >
+| < SELF: "self" >
+| < NEW: "new" >
+| < LPAREN: "(" >
+| < RPAREN: ")" >
+| < SEMICOL: ";" >
+| < LSQBR: "[" >
+| < RSQBR: "]" >
+| < NOT: "!" >
+| < ISNULL: "isnull" >
+| < COMM: "," >
+| < LCBR: "{" >
+| < RCBR: "}" >
+| < PERIOD: "." >
+| < OBJECT: "object">
+| < EQUALS: "=" >
+
+
+// LOTS OF TOKENS MISSING HERE!
+
+| < INTEGER_LITERAL: (["0"-"9"])+ >
+| < OP: "and" | "<" | "==" | "div" | "+" | "-" | "*">
+| < ID: ["a"-"z","A"-"Z"](["a"-"z","A"-"Z","0"-"9","_"])* >
+
+}
+
+/*
+ * TOKEN tester
+ */
+public void testTokens() :
+{
+  Token t;
+}
+{
+  ( ( ( t = <PROC>
+      | t = <FUN>
+      | t = <CLASS>
+      | t = <EXTENDS>
+      | t = <RETURN>
+      | t = <ARRAYOF>
+      | t = <BOOLEAN>
+      | t = <INT>
+      | t = <IF>
+      | t = <THEN>
+      | t = <ELSE>
+      | t = <WHILE>
+      | t = <DO>
+      | t = <OUTPUT>
+      | t = <LENGTH>
+      | t = <TRUE>
+      | t = <FALSE>
+      | t = <SELF>
+      | t = <NEW>
+      | t = <LPAREN >
+      | t = <RPAREN>
+      | t = <SEMICOL >
+      | t = <LSQBR>
+      | t = <RSQBR>
+      | t = <NOT>
+      | t = <ISNULL>
+      | t = <COMM>
+      | t = <LCBR>
+      | t = <RCBR>
+      | t = <PERIOD>
+      | t = <OBJECT>
+      | t = <EQUALS>
+        // ADD YOUR OWN TOKENS HERE AS YOU DEFINE EACH ONE
+      )
+      { System.out.println("Recognised as valid token: " + t.image); }
+    )
+  | ( t = <INTEGER_LITERAL>
+      { System.out.println("Recognised as INTEGER_LITERAL: " + t.image); }
+    )
+  | ( t = <ID>
+      { System.out.println("Recognised as ID: " + t.image); }
+    )
+  | ( t= <OP>
+      {  System.out.println("Recognised as OP: " + t.image); }
+    )
+  )*
+}
+
+
+/************************************
+ * The Moopl grammar starts here *
+ ************************************/
+
+
+public void nt_Program() :
+{}
+{
+  (nt_ProcDecl())+ (nt_ClassDecl())*<EOF>
+}
+
+public void nt_ClassDecl() :
+{}
+{
+  LOOKAHEAD(3)
+  <CLASS> <ID> <LPAREN> (nt_FieldDecl())*(nt_MethodDecl())*<RPAREN> //TOdo: ADD MISSING CASES
+| <CLASS> <ID> <EXTENDS> <ID> <LCBR>(nt_FieldDecl())+ (nt_MethodDecl())*<RCBR>
+}
+
+public void nt_MethodDecl() :
+{}
+{
+    nt_ProcDecl() | nt_FunDecl()
+}
+
+public void nt_FunDecl() :
+{}
+{
+  // TODO: ADD MISSING CASES
+  <FUN> nt_Type() <ID> <LPAREN> nt_FormalList() <RPAREN> <LCBR> (nt_Statement())* <RETURN> nt_Exp() <SEMICOL> <RCBR>
+}
+
+public void nt_ProcDecl() :
+{}
+{
+  <PROC> <ID> <LPAREN> nt_FormalList() <RPAREN> <LCBR> (nt_Statement())* <RCBR>// TODO: ADD MISSING CASES
+}
+
+public void nt_PrimaryExp() :
+{
+}
+{
+  <INTEGER_LITERAL> // TODO: ADD MISSING CASES
+| <TRUE>
+| <FALSE>
+| <ID>
+| <SELF>
+| LOOKAHEAD (2)
+ <NEW> <ARRAYOF> <LPAREN> nt_Type() <RPAREN>
+        <LSQBR> nt_Exp() <RSQBR>
+| <NEW> <OBJECT> <ID> <LPAREN> nt_ExpList() <RPAREN>
+| <NOT> nt_PrimaryExp()
+| <ISNULL> nt_PrimaryExp()
+| <LPAREN> nt_Exp() <RPAREN>
+
+}
+
+// TODO: ADD MISSING NON_TERMINALS
+
+public void eof() :
+{}
+{
+  <EOF>
+}
+
+public void nt_var() :
+{}
+{
+  <ID>
+}
+
+public void nt_FormalList() :
+{}
+{
+  nt_Type() <ID> (nt_FormalRest())*
+  | {}
+}
+
+public void nt_FormalRest() :
+{}
+{
+    <COMM> nt_Type() <ID>
+}
+
+public void nt_Type() :
+{}
+{
+  <ARRAYOF><LPAREN>nt_Type()<RPAREN>
+  |<BOOLEAN>
+  |<INT>
+  |<ID>
+}
+
+public void nt_FieldDecl():
+{}
+{
+  nt_Type()<ID><SEMICOL>
+}
+
+public void nt_Statement() :
+{}
+{
+  nt_Block()
+  | LOOKAHEAD(2)
+  nt_Type() <ID> <SEMICOL>
+  | LOOKAHEAD(2)
+  nt_var() <EQUALS> nt_Exp() <SEMICOL>
+  |<IF><LPAREN>nt_Exp()<RPAREN><THEN>nt_Block()<ELSE>nt_Block()
+  |<WHILE><LPAREN>nt_Exp()<RPAREN><DO>nt_Block()
+  |<OUTPUT>nt_Exp()<SEMICOL>
+  |nt_PrimaryExp()
+}
+
+public void nt_FRED() :
+{}
+{
+    <LSQBR>nt_Exp()<RSQBR><EQUALS>nt_Exp()<SEMICOL>
+    | <PERIOD><ID><LPAREN>nt_ExpList()<RPAREN><SEMICOL>
+}
+
+public void nt_Block() :
+{}
+{
+  <LCBR>(nt_Statement())*<RCBR>
+}
+
+public void nt_Exp() :
+{}
+{
+  nt_PrimaryExp() nt_Tilak()
+}
+
+public void nt_Tilak() :
+{}
+{
+  <OP>nt_PrimaryExp()
+  |<LPAREN>nt_Exp()<RPAREN>
+  |LOOKAHEAD(2)<PERIOD><LENGTH>
+  |<PERIOD><ID><LPAREN>nt_ExpList()<RPAREN>
+  |{}
+}
+
+public void nt_ExpList() :
+{}
+{
+  nt_Exp() (nt_ExpRest())* | {}
+}
+
+public void nt_ExpRest() :
+{}
+{
+  <COMM> nt_Exp()
+}
